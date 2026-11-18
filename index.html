@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#14111f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Alb Photoboot">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<title>Alb Photoboot</title>
+<style>
+:root{--bg:#14111f;--card:#1f1a33;--pri:#ff4d8d;--pri2:#ffb347;--txt:#fff;--mut:#a79fc2}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:system-ui,"Noto Sans Thai",sans-serif;overflow:hidden}
+.screen{display:none;position:absolute;inset:0;padding:max(18px,env(safe-area-inset-top,0px)) max(18px,env(safe-area-inset-right,0px)) max(18px,env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px))}
+.screen.on{display:flex}
+button{font:inherit;color:inherit;border:0;cursor:pointer}
+.btn{background:linear-gradient(135deg,var(--pri),var(--pri2));padding:16px 28px;border-radius:16px;font-size:20px;font-weight:700}
+.btn.ghost{background:var(--card);border:1px solid #3a3358}
+.btn:disabled{opacity:.4}
+.install-btn{display:none;padding:10px 16px;font-size:16px}
+.install-btn.show{display:inline-flex}
+/* pay */
+#pay{flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center}
+#pay h1{margin:0;font-size:34px}
+#qrBox{background:#fff;border-radius:20px;padding:14px;width:min(52vh,80vw);aspect-ratio:1;display:flex;align-items:center;justify-content:center;color:#333}
+#qrBox img{max-width:100%;max-height:100%;object-fit:contain}
+.price{font-size:40px;font-weight:800;color:var(--pri2)}
+.gear{position:absolute;top:12px;right:12px;background:transparent;font-size:28px;opacity:.5;padding:8px}
+/* camera */
+#cam{gap:16px}
+#stage{flex:1;display:flex;align-items:center;justify-content:center;min-width:0}
+#pv{position:relative;height:100%;max-width:100%;border-radius:18px;overflow:hidden;background:#000;container-type:size}
+#video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#video.mirror{transform:scaleX(-1)}
+.flip{position:absolute;top:10px;right:10px;z-index:3;background:#0008;border-radius:50%;width:52px;height:52px;font-size:24px}
+#stk{position:absolute;inset:0;pointer-events:none}
+#stk span{position:absolute;font-size:22cqmin;line-height:1}
+#count{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-size:40cqmin;font-weight:900;text-shadow:0 0 30px #000;pointer-events:none}
+#flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .35s}
+#shotInfo{position:absolute;top:10px;left:0;right:0;text-align:center;font-size:20px;text-shadow:0 0 8px #000}
+#panel{width:min(38vw,380px);background:var(--card);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:0}
+.tabs{display:flex;gap:6px}
+.tabs button{flex:1;background:#2b2547;padding:10px 4px;border-radius:12px;font-size:15px}
+.tabs button.on{background:var(--pri)}
+#opts{flex:1;overflow:auto;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;align-content:start}
+.opt{background:#2b2547;border-radius:12px;padding:8px;text-align:center;font-size:14px;border:3px solid transparent}
+.opt.sel{border-color:var(--pri2)}
+.opt canvas,.opt .em{width:100%;display:block;border-radius:6px}
+.opt .em{font-size:36px;line-height:1.3}
+.hint{font-size:13px;color:var(--mut)}
+/* result */
+#res{flex-direction:column;align-items:center;gap:14px}
+#resImg{flex:1;min-height:0;max-width:100%;object-fit:contain;border-radius:8px;box-shadow:0 8px 40px #000a}
+.row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+/* modal */
+#modal{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;z-index:9}
+#modal.on{display:flex}
+.box{background:var(--card);border-radius:18px;padding:22px;width:min(92vw,520px);max-height:92vh;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.box h2{margin:0}
+.box label{display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--mut)}
+.box input[type=text],.box input[type=password],.box input[type=number]{font:inherit;padding:12px;border-radius:10px;border:1px solid #3a3358;background:#14111f;color:#fff;user-select:text;-webkit-user-select:text}
+.thumbs{display:flex;gap:6px;flex-wrap:wrap}
+.thumbs div{position:relative}
+.thumbs img{height:70px;border-radius:6px;background:#444}
+.thumbs b{position:absolute;top:-6px;right:-6px;background:#e33;border-radius:50%;width:22px;height:22px;text-align:center;line-height:22px;font-size:14px}
+/* print */
+#printArea{display:none}
+@media print{
+ @page{size:4in 6in;margin:0}
+ body>*:not(#printArea){display:none!important}
+ html,body{background:#fff;overflow:visible;height:auto}
+ #printArea{display:block}
+ #printArea img{width:4in;height:6in;display:block}
+}
+#payStatus{min-height:26px;font-size:18px;color:var(--pri2);padding:0 12px}
+.pulse{animation:pl 1.2s infinite}@keyframes pl{50%{opacity:.35}}
+@media (orientation:portrait){#cam{flex-direction:column}#panel{width:100%;height:42%}#pv{height:auto;width:100%;max-height:100%}}
+</style>
+</head>
+<body>
+
+<!-- 1. ชำระเงิน -->
+<section id="pay" class="screen on">
+  <button class="gear" id="gearBtn">⚙️</button>
+  <h1 id="payTitle">📸 Alb Photoboot</h1>
+  <button class="btn ghost install-btn" id="installBtn">📲 ติดตั้งแอป</button>
+  <div id="qrBox"><div id="qrEmpty">ยังไม่ได้ตั้งค่า QR<br>แตะ ⚙️ มุมขวาบน (สำหรับเจ้าของ)</div></div>
+  <div class="price" id="priceTxt"></div>
+  <div>สแกน QR เพื่อชำระเงิน</div>
+  <div id="payStatus"></div>
+  <button class="btn" id="paidBtn">✅ ชำระเงินแล้ว (เจ้าของยืนยัน)</button>
+</section>
+
+<!-- 2. กล้อง + เลือกเทมเพลต -->
+<section id="cam" class="screen">
+  <div id="stage">
+    <div id="pv">
+      <video id="video" autoplay playsinline muted></video>
+      <div id="stk"></div>
+      <button class="flip" id="flipBtn">🔄</button>
+      <div id="shotInfo"></div>
+      <div id="count"></div>
+      <div id="flash"></div>
+    </div>
+  </div>
+  <div id="panel">
+    <div class="tabs" id="tabs">
+      <button data-t="layout" class="on">เฟรม</button>
+      <button data-t="frame">กรอบ</button>
+      <button data-t="emoji">อิโมจิ</button>
+      <button data-t="filter">ฟิลเตอร์</button>
+    </div>
+    <div id="opts"></div>
+    <div class="hint" id="hint"></div>
+    <button class="btn" id="goBtn">ยืนยัน • เริ่มถ่าย</button>
+  </div>
+</section>
+
+<!-- 3. ผลลัพธ์ -->
+<section id="res" class="screen">
+  <img id="resImg" alt="">
+  <div class="row">
+    <button class="btn" id="printBtn">🖨️ Print</button>
+    <button class="btn ghost" id="saveBtn">💾 บันทึกรูป</button>
+    <button class="btn ghost" id="doneBtn">เสร็จสิ้น</button>
+  </div>
+</section>
+
+<div id="modal"><div class="box" id="modalBox"></div></div>
+<div id="printArea"><img id="printImg" alt=""></div>
+
+<script>
+/* ============ storage (IndexedDB) ============ */
+const DB = new Promise((ok, no) => {
+  const r = indexedDB.open('photobooth', 1);
+  r.onupgradeneeded = () => r.result.createObjectStore('kv');
+  r.onsuccess = () => ok(r.result);
+  r.onerror = () => no(r.error);
+});
+const kvGet = async k => { const db = await DB; return new Promise(ok => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => ok(q.result); q.onerror = () => ok(undefined); }); };
+const kvSet = async (k, v) => { const db = await DB; return new Promise(ok => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = ok; t.onerror = ok; }); };
+
+const DEFAULTS = { pin: '1234', price: 100, title: 'Alb Photoboot', caption: 'Alb Photoboot', payQR: null, frames: { 1: [], 2: [], 3: [], 4: [] }, skipPay: false, payPkg: '', payKeywords: 'รับเงิน,ได้รับ,เงินเข้า,รับชำระ', exact: false, idleSec: 180, resultSec: 90 };
+let S = { ...DEFAULTS };
+async function loadSettings() { const s = await kvGet('settings'); S = { ...DEFAULTS, ...(s || {}), frames: { ...DEFAULTS.frames, ...((s || {}).frames || {}) } }; }
+const saveSettings = () => kvSet('settings', S);
+
+/* ============ constants ============ */
+const W = 1200, H = 1800;                       // ภาพสุดท้าย 4x6 นิ้ว (300dpi)
+const AREA = { x: 60, y: 60, w: 1080, h: 1540 };
+function slots(n) {
+  const { x, y, w, h } = AREA;
+  if (n === 1) return [{ x, y, w, h }];
+  if (n === 2) { const hh = 750; return [{ x, y, w, h: hh }, { x, y: y + hh + 40, w, h: hh }]; }
+  if (n === 3) { const hh = Math.floor((h - 80) / 3); return [0, 1, 2].map(i => ({ x, y: y + i * (hh + 40), w, h: hh })); }
+  const ww = 520, hh = 750;
+  return [0, 1, 2, 3].map(i => ({ x: x + (i % 2) * (ww + 40), y: y + Math.floor(i / 2) * (hh + 40), w: ww, h: hh }));
+}
+const BUILTIN = [
+  { name: 'ขาวคลาสสิก', bg: ['#ffffff', '#ffffff'], line: '#222', text: '#222', deco: '' },
+  { name: 'ชมพูหวาน', bg: ['#ffd1e3', '#ff9ec4'], line: '#fff', text: '#fff', deco: '💖' },
+  { name: 'ดำทอง', bg: ['#161616', '#2a2a2a'], line: '#e8b84a', text: '#e8b84a', deco: '✨' },
+  { name: 'มิ้นต์สดใส', bg: ['#c9f5e1', '#7fdcb4'], line: '#fff', text: '#1b5e45', deco: '🌿' },
+];
+const FILTERS = [
+  { name: 'ปกติ', css: 'none' },
+  { name: 'ขาวดำ', css: 'grayscale(1) contrast(1.1)' },
+  { name: 'ซีเปีย', css: 'sepia(.8)' },
+  { name: 'สดใส', css: 'saturate(1.7) contrast(1.08)' },
+  { name: 'ผิวใส', css: 'brightness(1.12) contrast(.92) saturate(1.1)' },
+  { name: 'วอร์ม', css: 'sepia(.3) saturate(1.3) hue-rotate(-12deg)' },
+  { name: 'คูล', css: 'hue-rotate(15deg) saturate(1.2) brightness(1.05)' },
+  { name: 'เรโทร', css: 'sepia(.5) contrast(1.2) saturate(.8)' },
+  { name: 'ดราม่า', css: 'contrast(1.35) saturate(.85) brightness(.95)' },
+];
+const EMOJIS = ['❤️', '😎', '🎀', '⭐', '🎉', '🐱', '🌸', '👑', '🔥', '🦄', '🎈', '✨'];
+const STK_POS = [[.04, .03], [.74, .03], [.04, .72], [.74, .72]];
+
+/* ============ state ============ */
+const st = { facing: 'user', n: 2, frame: 0, emoji: [], filter: 0, tab: 'layout', busy: false, stream: null, result: null };
+const $ = id => document.getElementById(id);
+const NATIVE = !!window.Android;          // true เมื่อรันในแอป Android (APK)
+let deferredInstallPrompt = null;
+const isInstalled = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+function updateInstallButton() {
+  $('installBtn').classList.toggle('show', !NATIVE && !isInstalled());
+}
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  updateInstallButton();
+});
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  updateInstallButton();
+});
+function showInstallHelp() {
+  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const message = ios
+    ? 'ติดตั้งบน iPhone หรือ iPad: แตะปุ่มแชร์ใน Safari แล้วเลือก “เพิ่มไปยังหน้าจอโฮม” จากนั้นแตะ “เพิ่ม”'
+    : 'ติดตั้งแอปได้จากเมนูของเบราว์เซอร์ โดยเลือก “ติดตั้งแอป” หรือ “เพิ่มไปยังหน้าจอหลัก”';
+  openModal('<h2>ติดตั้ง Alb Photoboot</h2><p>' + message + '</p><div class="row"><button class="btn" id="installHelpOk">ตกลง</button></div>');
+  $('installHelpOk').onclick = closeModal;
+}
+$('installBtn').onclick = async () => {
+  if (!deferredInstallPrompt) { showInstallHelp(); return; }
+  const prompt = deferredInstallPrompt;
+  deferredInstallPrompt = null;
+  await prompt.prompt();
+  await prompt.userChoice;
+  updateInstallButton();
+};
+const usedKeys = new Set();               // กันใช้แจ้งเตือนเดิมซ้ำ
+let waiting = false;                      // กำลังรอแจ้งเตือนเงินเข้า
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const show = id => document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id));
+const framesFor = n => [...BUILTIN.map((b, i) => ({ kind: 'builtin', i, name: b.name })), ...(S.frames[n] || []).map((d, i) => ({ kind: 'custom', i, name: 'กรอบ ' + (i + 1), data: d }))];
+const loadImg = src => new Promise(ok => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => ok(null); im.src = src; });
+
+/* ============ หน้าชำระเงิน ============ */
+function renderPay() {
+  $('payTitle').textContent = '📸 ' + S.title;
+  $('priceTxt').textContent = S.price > 0 ? S.price + ' บาท' : 'ฟรี';
+  const box = $('qrBox');
+  if (S.payQR) box.innerHTML = '<img src="' + S.payQR + '" alt="QR">';
+  else box.innerHTML = '<div>ยังไม่ได้ตั้งค่า QR<br>แตะ ⚙️ มุมขวาบน (สำหรับเจ้าของ)</div>';
+  waiting = NATIVE && !S.skipPay;
+  const ps = $('payStatus'), pb = $('paidBtn');
+  if (!NATIVE || S.skipPay) ps.textContent = '';
+  else if (!Android.isListenerEnabled()) ps.textContent = '⚠️ เจ้าของ: ยังไม่ได้เปิดสิทธิ์อ่านแจ้งเตือน (แตะ ⚙️)';
+  else if (!S.payPkg) ps.textContent = '⚠️ เจ้าของ: ยังไม่ได้เลือกแอปรับเงิน (แตะ ⚙️)';
+  else ps.innerHTML = '<span class="pulse">⏳ กำลังรอเงินเข้า...</span>';
+  pb.className = (NATIVE && !S.skipPay) ? 'btn ghost' : 'btn';
+  pb.textContent = S.skipPay ? '▶ เริ่มถ่ายรูป' : (NATIVE ? 'เจ้าของยืนยันเอง (PIN)' : '✅ ชำระเงินแล้ว (เจ้าของยืนยัน)');
+}
+function askPin(msg) {
+  return new Promise(ok => {
+    openModal(`<h2>${msg}</h2><label>รหัส PIN<input type="password" id="pinIn" inputmode="numeric" autocomplete="off"></label>
+      <div class="row"><button class="btn ghost" id="x">ยกเลิก</button><button class="btn" id="o">ตกลง</button></div>`);
+    $('pinIn').focus();
+    $('x').onclick = () => { closeModal(); ok(false); };
+    $('o').onclick = () => { const good = $('pinIn').value === S.pin; if (!good) { $('pinIn').value = ''; $('pinIn').placeholder = 'PIN ไม่ถูกต้อง'; return; } closeModal(); ok(true); };
+  });
+}
+$('paidBtn').onclick = async () => {
+  if (S.skipPay) startCamera();
+  else if (await askPin('เจ้าของยืนยันว่ารับเงินแล้ว')) { await logSale(S.price, 'manual'); startCamera(); }
+};
+$('gearBtn').onclick = async () => { if (await askPin('เข้าหน้าตั้งค่า')) openAdmin(); };
+
+/* ============ modal ============ */
+function openModal(html) { $('modalBox').innerHTML = html; $('modal').classList.add('on'); }
+function closeModal() { $('modal').classList.remove('on'); if (NATIVE) Android.stopLearn(); }
+function notify(msg) {   // แทน alert() ซึ่ง WebView ไม่แสดง
+  openModal('<h2>' + esc(msg) + '</h2><div class="row"><button class="btn" id="nOk">ตกลง</button></div>');
+  $('nOk').onclick = closeModal;
+}
+
+/* ============ ตรวจจับเงินเข้าจากแจ้งเตือน (เฉพาะแอป Android) ============ */
+function parseAmount(t) {
+  const m = t.match(/(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)\s*(?:บาท|THB|฿)/i)
+    || t.match(/฿\s*(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)/);
+  return m ? parseFloat(m[1].replace(/,/g, '')) : null;
+}
+function matchPayment(n) {
+  const txt = (n.title || '') + ' ' + (n.text || '');
+  const kws = (S.payKeywords || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (kws.length && !kws.some(k => txt.includes(k))) return { ok: false, why: 'keyword' };
+  const amt = parseAmount(txt);
+  if (amt == null) return { ok: false, why: 'amount', reason: '⚠️ อ่านยอดจากแจ้งเตือนไม่ได้ ให้เจ้าของยืนยันด้วย PIN' };
+  const ok = S.exact ? Math.abs(amt - S.price) < 0.005 : amt + 0.005 >= S.price;
+  return ok ? { ok: true, amount: amt } : { ok: false, why: 'low', amount: amt, reason: 'ยอดที่ได้รับ ' + amt + ' บาท ยังไม่ครบ ' + S.price + ' บาท' };
+}
+window.onNativeNotification = async json => {
+  let n; try { n = JSON.parse(json); } catch (e) { return; }
+  if (!waiting || !$('pay').classList.contains('on') || $('modal').classList.contains('on')) return;
+  const r = matchPayment(n);
+  if (r.ok) { const key = n.pkg + '|' + n.time + '|' + n.text; if (usedKeys.has(key)) return; usedKeys.add(key); waiting = false; logSale(r.amount, 'auto'); $('payStatus').textContent = '✅ ได้รับเงิน ' + r.amount + ' บาท'; await sleep(1200); startCamera(); }
+  else if (r.reason) $('payStatus').textContent = r.reason;
+};
+function nativeAdminHtml() {
+  if (!NATIVE) return '<div class="hint">🔔 ตรวจจับเงินเข้าอัตโนมัติใช้ได้เฉพาะในแอป Android (APK) เท่านั้น</div>';
+  const on = Android.isListenerEnabled();
+  return `<h2 style="font-size:18px">🔔 ตรวจจับเงินเข้าอัตโนมัติ (ถุงเงิน)</h2>
+    <div>สิทธิ์อ่านแจ้งเตือน: ${on ? '✅ เปิดแล้ว' : '❌ ยังไม่เปิด'}</div>
+    <button class="btn ghost" id="aNotifSet">เปิดหน้าตั้งค่าสิทธิ์อ่านแจ้งเตือน</button>
+    <label>แพ็กเกจแอปรับเงิน (เลือกจากรายการเรียนรู้ด้านล่าง)<input type="text" id="aPkg" value="${esc(S.payPkg)}"></label>
+    <button class="btn ghost" id="aLearn">🎓 เรียนรู้จากแจ้งเตือน</button>
+    <div id="learnList" class="hint"></div>
+    <label>คำสำคัญที่ต้องมีในข้อความ (คั่นด้วยจุลภาค มีคำใดคำหนึ่งก็ผ่าน)<input type="text" id="aKw" value="${esc(S.payKeywords)}"></label>
+    <label style="flex-direction:row;align-items:center;gap:10px;color:#fff"><input type="checkbox" id="aExact" ${S.exact ? 'checked' : ''}> ยอดต้องเท่ากับราคาเป๊ะ (ถ้าไม่ติ๊ก รับยอดเท่ากับหรือมากกว่า)</label>
+    <button class="btn ghost" id="aSim">🧪 ทดสอบ: จำลองเงินเข้า</button>
+    <button class="btn ghost" id="aKiosk">🔒 ล็อกหน้าจอ (Kiosk) ไม่ให้ลูกค้าออกจากแอป</button>
+    <div class="hint">วิธีออกจาก Kiosk: กดปุ่ม Back กับปุ่มภาพรวม (Recent) ค้างพร้อมกัน</div>`;
+}
+function wireNativeAdmin() {
+  if (!NATIVE) return;
+  $('aNotifSet').onclick = () => Android.openListenerSettings();
+  $('aKiosk').onclick = () => { closeModal(); Android.startKiosk(); };
+  const setPkg = async v => { S.payPkg = v.trim(); Android.setPayPackage(S.payPkg); await saveSettings(); };
+  $('aPkg').onchange = e => setPkg(e.target.value);
+  $('aKw').onchange = async e => { S.payKeywords = e.target.value; await saveSettings(); };
+  $('aExact').onchange = async e => { S.exact = e.target.checked; await saveSettings(); };
+  $('aSim').onclick = () => {
+    closeModal();
+    window.onNativeNotification(JSON.stringify({ pkg: S.payPkg, title: 'ทดสอบ', text: 'ได้รับเงิน ' + S.price + ' บาท (จำลอง)', time: Date.now() }));
+  };
+  const list = $('learnList');
+  const render = () => {
+    let arr = []; try { arr = JSON.parse(Android.getLearned()); } catch (e) { }
+    if (!arr.length) { list.textContent = 'ยังไม่พบแจ้งเตือน • โอนเงินเข้าถุงเงินเล็กน้อย 1 ครั้ง (เช่น 1 บาท) แล้วกด "รีเฟรชรายการ"'; return; }
+    list.innerHTML = arr.map((n, i) => `<div class="opt" style="text-align:left;margin:4px 0" data-i="${i}"><b>${esc(n.pkg)}</b><br>${esc(n.title)}<br>${esc(n.text)}</div>`).join('');
+    list.querySelectorAll('.opt').forEach(el => el.onclick = async () => {
+      const n = arr[+el.dataset.i]; await setPkg(n.pkg); $('aPkg').value = n.pkg;
+      const r = matchPayment(n);
+      const why = r.why === 'keyword' ? 'ไม่พบคำสำคัญ' : r.why === 'amount' ? 'อ่านยอดไม่ได้' : 'ยอดไม่ถึงราคา';
+      list.insertAdjacentHTML('afterbegin', '<div>เลือก ' + esc(n.pkg) + ' แล้ว • ผลทดสอบข้อความนี้: ' + (r.ok ? '✅ ตรงเงื่อนไข ยอด ' + r.amount + ' บาท' : '❌ ไม่ผ่าน (' + why + ')' + (r.amount != null ? ' อ่านยอดได้ ' + r.amount + ' บาท' : '')) + '</div>');
+    });
+  };
+  $('aLearn').onclick = () => { Android.startLearn(); $('aLearn').textContent = '🔄 รีเฟรชรายการ'; $('aLearn').onclick = render; render(); };
+}
+
+/* ============ หน้าตั้งค่าเจ้าของ ============ */
+const readFile = f => new Promise(ok => { const r = new FileReader(); r.onload = () => ok(r.result); r.readAsDataURL(f); });
+function openAdmin() {
+  const thumbs = n => (S.frames[n] || []).map((d, i) => `<div><img src="${d}"><b data-n="${n}" data-i="${i}">×</b></div>`).join('');
+  openModal(`<h2>⚙️ ตั้งค่า (เจ้าของ)</h2>
+    <div class="hint" id="aStats">กำลังโหลดสถิติ...</div>
+    <button class="btn ghost" id="aClearStats">ล้างสถิติ</button>
+    <label>ชื่อร้าน/งาน (หน้าแรก)<input type="text" id="aTitle" value="${S.title.replace(/"/g, '&quot;')}"></label>
+    <label>ข้อความใต้รูป<input type="text" id="aCap" value="${S.caption.replace(/"/g, '&quot;')}"></label>
+    <label>ราคา (บาท)<input type="number" id="aPrice" value="${S.price}"></label>
+    <label>กลับหน้าชำระเงินอัตโนมัติ เมื่อไม่มีการแตะบนหน้ากล้อง (วินาที, 0 = ปิด)<input type="number" id="aIdle" value="${S.idleSec}"></label>
+    <label>กลับหน้าชำระเงินอัตโนมัติ หลังถ่ายเสร็จ (วินาที, 0 = ปิด)<input type="number" id="aRes" value="${S.resultSec}"></label>
+    <label>รหัส PIN เจ้าของ<input type="text" id="aPin" value="${S.pin}" inputmode="numeric"></label>
+    <label>QR รับเงิน (เลือกรูป QR ของคุณ เช่น PromptPay)<input type="file" id="aQR" accept="image/*"></label>
+    ${S.payQR ? '<div class="thumbs"><div><img src="' + S.payQR + '" style="height:90px;background:#fff"></div></div>' : ''}
+    ${[1, 2, 3, 4].map(n => `<label>กรอบเพิ่มเอง สำหรับ ${n} เฟรม (ไฟล์ PNG พื้นโปร่งใส ขนาด 1200×1800)
+      <input type="file" class="aFr" data-n="${n}" accept="image/png"></label><div class="thumbs">${thumbs(n)}</div>`).join('')}
+    ${nativeAdminHtml()}
+    <label style="flex-direction:row;align-items:center;gap:10px;color:#fff"><input type="checkbox" id="aSkip" ${S.skipPay ? 'checked' : ''}> โหมดทดสอบ: ข้ามการยืนยันชำระเงิน</label>
+    <div class="row"><button class="btn" id="aSave">บันทึก</button></div>`);
+  wireNativeAdmin();
+  showStats();
+  let armed = false;
+  $('aClearStats').onclick = async e => {
+    if (!armed) { armed = true; e.target.textContent = 'แตะอีกครั้งเพื่อยืนยันล้างสถิติ'; return; }
+    await kvSet('sales', []); armed = false; e.target.textContent = 'ล้างสถิติ'; showStats();
+  };
+  $('aQR').onchange = async e => { if (e.target.files[0]) { S.payQR = await readFile(e.target.files[0]); await saveSettings(); openAdmin(); } };
+  document.querySelectorAll('.aFr').forEach(inp => inp.onchange = async e => {
+    const f = e.target.files[0]; if (!f) return; const n = +inp.dataset.n;
+    S.frames[n].push(await readFile(f)); await saveSettings(); openAdmin();
+  });
+  document.querySelectorAll('.thumbs b').forEach(b => b.onclick = async () => { S.frames[+b.dataset.n].splice(+b.dataset.i, 1); await saveSettings(); openAdmin(); });
+  $('aSave').onclick = async () => {
+    S.title = $('aTitle').value || 'Alb Photoboot'; S.caption = $('aCap').value; S.price = +$('aPrice').value || 0;
+    S.pin = $('aPin').value || '1234'; S.skipPay = $('aSkip').checked;
+    S.idleSec = Math.max(0, +$('aIdle').value || 0); S.resultSec = Math.max(0, +$('aRes').value || 0);
+    await saveSettings(); closeModal(); renderPay();
+  };
+}
+
+/* ============ กล้อง ============ */
+async function startCamera() {
+  waiting = false;
+  st.facing = 'user'; st.n = 2; st.frame = 0; st.emoji = []; st.filter = 0; st.tab = 'layout'; st.busy = false;
+  show('cam'); setTab('layout'); applyPreview(); setIdle(S.idleSec);
+  try {
+    if (!st.stream) st.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: st.facing, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+    $('video').srcObject = st.stream;
+    $('video').classList.toggle('mirror', st.facing === 'user');
+    $('video').play().catch(() => {});
+  } catch (e) {
+    notify('เปิดกล้องไม่ได้ กรุณาอนุญาตการใช้กล้อง (' + e.name + ')');
+  }
+}
+function stopCamera() { if (st.stream) { st.stream.getTracks().forEach(t => t.stop()); st.stream = null; } $('video').srcObject = null; }
+
+$('flipBtn').onclick = async () => {   // สลับกล้องหน้า/หลัง
+  if (st.busy) return;
+  st.facing = st.facing === 'user' ? 'environment' : 'user';
+  stopCamera();
+  try {
+    st.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: st.facing, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+    $('video').srcObject = st.stream;
+    $('video').classList.toggle('mirror', st.facing === 'user');
+  } catch (e) { notify('สลับกล้องไม่ได้'); }
+};
+
+function applyPreview() {
+  const s = slots(st.n)[0];
+  $('pv').style.aspectRatio = s.w + '/' + s.h;
+  $('video').style.filter = FILTERS[st.filter].css;
+  $('stk').innerHTML = st.emoji.map((e, i) => `<span style="left:${STK_POS[i][0] * 100}%;top:${STK_POS[i][1] * 100}%">${e}</span>`).join('');
+  $('hint').textContent = st.n + ' เฟรม • ' + FILTERS[st.filter].name + (st.emoji.length ? ' • อิโมจิ ' + st.emoji.length + '/4' : '');
+}
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => setTab(b.dataset.t));
+function setTab(t) {
+  st.tab = t;
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+  const o = $('opts'); o.innerHTML = '';
+  if (t === 'layout') {
+    [1, 2, 3, 4].forEach(n => {
+      const d = document.createElement('div'); d.className = 'opt' + (st.n === n ? ' sel' : '');
+      const c = document.createElement('canvas'); c.width = 120; c.height = 180; drawMini(c, n); d.appendChild(c);
+      d.append(n + ' เฟรม'); d.onclick = () => { st.n = n; st.frame = 0; applyPreview(); setTab('layout'); }; o.appendChild(d);
+    });
+  } else if (t === 'frame') {
+    framesFor(st.n).forEach((f, idx) => {
+      const d = document.createElement('div'); d.className = 'opt' + (st.frame === idx ? ' sel' : '');
+      const c = document.createElement('canvas'); c.width = 120; c.height = 180; drawMini(c, st.n, f); d.appendChild(c);
+      d.append(f.name); d.onclick = () => { st.frame = idx; setTab('frame'); }; o.appendChild(d);
+    });
+  } else if (t === 'emoji') {
+    EMOJIS.forEach(e => {
+      const d = document.createElement('div'); d.className = 'opt' + (st.emoji.includes(e) ? ' sel' : '');
+      d.innerHTML = '<div class="em">' + e + '</div>';
+      d.onclick = () => { const i = st.emoji.indexOf(e); if (i >= 0) st.emoji.splice(i, 1); else if (st.emoji.length < 4) st.emoji.push(e); applyPreview(); setTab('emoji'); };
+      o.appendChild(d);
+    });
+  } else {
+    FILTERS.forEach((f, i) => {
+      const d = document.createElement('div'); d.className = 'opt' + (st.filter === i ? ' sel' : '');
+      d.innerHTML = '<div class="em" style="font-size:30px;filter:' + f.css + '">🌈</div>' + f.name;
+      d.onclick = () => { st.filter = i; applyPreview(); setTab('filter'); }; o.appendChild(d);
+    });
+  }
+}
+async function drawMini(c, n, f) {
+  const x = c.getContext('2d'); x.scale(c.width / W, c.height / H);
+  await drawFrameBase(x, f || { kind: 'builtin', i: st.frame < BUILTIN.length ? st.frame : 0 }, n);
+  x.fillStyle = 'rgba(120,120,120,.55)'; slots(n).forEach(s => x.fillRect(s.x, s.y, s.w, s.h));
+  await drawFrameOverlay(x, f || { kind: 'builtin', i: 0 }, n);
+}
+
+/* ============ วาดกรอบ ============ */
+function rr(x, a, b, w, h, r) { x.beginPath(); x.moveTo(a + r, b); x.arcTo(a + w, b, a + w, b + h, r); x.arcTo(a + w, b + h, a, b + h, r); x.arcTo(a, b + h, a, b, r); x.arcTo(a, b, a + w, b, r); x.closePath(); }
+async function drawFrameBase(x, f, n) {
+  if (f.kind === 'custom') { x.fillStyle = '#fff'; x.fillRect(0, 0, W, H); return; }
+  const b = BUILTIN[f.i]; const g = x.createLinearGradient(0, 0, W, H); g.addColorStop(0, b.bg[0]); g.addColorStop(1, b.bg[1]);
+  x.fillStyle = g; x.fillRect(0, 0, W, H);
+}
+async function drawFrameOverlay(x, f, n) {
+  if (f.kind === 'custom') { const im = await loadImg(f.data); if (im) x.drawImage(im, 0, 0, W, H); return; }
+  const b = BUILTIN[f.i];
+  x.strokeStyle = b.line; x.lineWidth = 10; slots(n).forEach(s => { rr(x, s.x, s.y, s.w, s.h, 14); x.stroke(); });
+  if (b.deco) { x.font = '90px sans-serif'; x.textBaseline = 'top'; [[20, 1690], [1090, 1690], [20, 8], [1090, 8]].forEach(p => x.fillText(b.deco, p[0], p[1])); }
+}
+
+/* ============ ถ่ายรูป ============ */
+// Safari (iPhone) ไม่รองรับ ctx.filter จึงมีตัวคำนวณสีทีละพิกเซลสำรองไว้
+const CTX_FILTER = (() => {
+  try {
+    const c = document.createElement('canvas'); c.width = c.height = 1;
+    const x = c.getContext('2d'); x.filter = 'grayscale(1)'; x.fillStyle = '#f00'; x.fillRect(0, 0, 1, 1);
+    const d = x.getImageData(0, 0, 1, 1).data; return d[0] === d[1];
+  } catch (e) { return false; }
+})();
+function filterMatrix(css) {
+  let m = [1, 0, 0, 0, 1, 0, 0, 0, 1], b = [0, 0, 0];
+  const mul = (A, o) => {
+    const nm = [], nb = [];
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 3; c++) nm[r * 3 + c] = A[r * 3] * m[c] + A[r * 3 + 1] * m[3 + c] + A[r * 3 + 2] * m[6 + c];
+      nb[r] = A[r * 3] * b[0] + A[r * 3 + 1] * b[1] + A[r * 3 + 2] * b[2] + o[r];
+    }
+    m = nm; b = nb;
+  };
+  css.replace(/([a-z-]+)\(([-\d.]+)(?:deg)?\)/g, (_, fn, v) => {
+    v = parseFloat(v); let A = null, o = [0, 0, 0];
+    if (fn === 'grayscale') { const k = 1 - v; A = [.2126 + .7874 * k, .7152 - .7152 * k, .0722 - .0722 * k, .2126 - .2126 * k, .7152 + .2848 * k, .0722 - .0722 * k, .2126 - .2126 * k, .7152 - .7152 * k, .0722 + .9278 * k]; }
+    else if (fn === 'sepia') { const k = 1 - v; A = [.393 + .607 * k, .769 - .769 * k, .189 - .189 * k, .349 - .349 * k, .686 + .314 * k, .168 - .168 * k, .272 - .272 * k, .534 - .534 * k, .131 + .869 * k]; }
+    else if (fn === 'saturate') A = [.213 + .787 * v, .715 - .715 * v, .072 - .072 * v, .213 - .213 * v, .715 + .285 * v, .072 - .072 * v, .213 - .213 * v, .715 - .715 * v, .072 + .928 * v];
+    else if (fn === 'hue-rotate') { const r = v * Math.PI / 180, c = Math.cos(r), s = Math.sin(r); A = [.213 + c * .787 - s * .213, .715 - c * .715 - s * .715, .072 - c * .072 + s * .928, .213 - c * .213 + s * .143, .715 + c * .285 + s * .140, .072 - c * .072 - s * .283, .213 - c * .213 - s * .787, .715 - c * .715 + s * .715, .072 + c * .928 + s * .072]; }
+    else if (fn === 'brightness') A = [v, 0, 0, 0, v, 0, 0, 0, v];
+    else if (fn === 'contrast') { A = [v, 0, 0, 0, v, 0, 0, 0, v]; o = [.5 * (1 - v), .5 * (1 - v), .5 * (1 - v)]; }
+    if (A) mul(A, o);
+    return '';
+  });
+  return { m, b };
+}
+function applyPixelFilter(x, w, h, css) {
+  const { m, b } = filterMatrix(css);
+  const img = x.getImageData(0, 0, w, h), d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i] / 255, g = d[i + 1] / 255, bl = d[i + 2] / 255;
+    d[i] = (m[0] * r + m[1] * g + m[2] * bl + b[0]) * 255;
+    d[i + 1] = (m[3] * r + m[4] * g + m[5] * bl + b[1]) * 255;
+    d[i + 2] = (m[6] * r + m[7] * g + m[8] * bl + b[2]) * 255;
+  }
+  x.putImageData(img, 0, 0);
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function countdown(secs) {
+  const c = $('count'); c.style.display = 'flex';
+  for (let i = secs; i > 0; i--) { c.textContent = i; await sleep(1000); }
+  c.style.display = 'none';
+}
+function grab(slot) {
+  const v = $('video'), vw = v.videoWidth, vh = v.videoHeight;
+  const c = document.createElement('canvas'); c.width = slot.w; c.height = slot.h; const x = c.getContext('2d');
+  const sr = slot.w / slot.h, vr = vw / vh; let sw, sh, sx, sy;
+  if (vr > sr) { sh = vh; sw = vh * sr; sx = (vw - sw) / 2; sy = 0; } else { sw = vw; sh = vw / sr; sx = 0; sy = (vh - sh) / 2; }
+  const css = FILTERS[st.filter].css; if (CTX_FILTER) x.filter = css;
+  if (st.facing === 'user') { x.translate(slot.w, 0); x.scale(-1, 1); }    // กลับด้านเหมือนกระจก
+  x.drawImage(v, sx, sy, sw, sh, 0, 0, slot.w, slot.h);
+  if (!CTX_FILTER && css !== 'none') applyPixelFilter(x, slot.w, slot.h, css);
+  return c;
+}
+$('goBtn').onclick = async () => {
+  if (st.busy || !$('video').videoWidth) return; st.busy = true;
+  $('panel').style.pointerEvents = 'none'; $('goBtn').disabled = true;
+  const sl = slots(st.n), shots = [];
+  for (let i = 0; i < st.n; i++) {
+    $('shotInfo').textContent = 'ภาพที่ ' + (i + 1) + ' / ' + st.n;
+    await countdown(3);
+    shots.push(grab(sl[i]));
+    const fl = $('flash'); fl.style.transition = 'none'; fl.style.opacity = 1; await sleep(60); fl.style.transition = 'opacity .35s'; fl.style.opacity = 0;
+    if (i < st.n - 1) await sleep(900);
+  }
+  $('shotInfo').textContent = '';
+  const out = await compose(shots);
+  st.result = out; $('resImg').src = out; $('printImg').src = out; $('saveBtn').textContent = '💾 บันทึกรูป';
+  $('panel').style.pointerEvents = ''; $('goBtn').disabled = false; st.busy = false;
+  setIdle(S.resultSec); show('res');
+};
+async function compose(shots) {
+  const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
+  const f = framesFor(st.n)[st.frame] || framesFor(st.n)[0], sl = slots(st.n);
+  await drawFrameBase(x, f, st.n);
+  shots.forEach((s, i) => x.drawImage(s, sl[i].x, sl[i].y));
+  await drawFrameOverlay(x, f, st.n);
+  x.textBaseline = 'top';
+  sl.forEach(s => st.emoji.forEach((e, i) => { x.font = Math.round(.22 * Math.min(s.w, s.h)) + 'px sans-serif'; x.fillText(e, s.x + STK_POS[i][0] * s.w, s.y + STK_POS[i][1] * s.h); }));
+  if (S.caption && f.kind === 'builtin') {
+    const b = BUILTIN[f.i]; x.fillStyle = b.text; x.font = 'bold 64px "Noto Sans Thai",sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText(S.caption, W / 2, 1700); x.font = '34px sans-serif'; x.fillText(new Date().toLocaleDateString('th-TH'), W / 2, 1760);
+  }
+  return c.toDataURL('image/jpeg', .95);
+}
+
+/* ============ สถิติการขาย + หมดเวลาอัตโนมัติ ============ */
+async function logSale(amount, method) {
+  const a = (await kvGet('sales')) || [];
+  a.push({ t: Date.now(), amount, method });
+  await kvSet('sales', a);
+}
+async function showStats() {
+  const el = $('aStats'); if (!el) return;
+  const a = (await kvGet('sales')) || [];
+  const d0 = new Date(); d0.setHours(0, 0, 0, 0);
+  const today = a.filter(x => x.t >= d0.getTime());
+  const sum = l => l.reduce((s, x) => s + (+x.amount || 0), 0);
+  el.textContent = 'วันนี้ ' + today.length + ' ครั้ง รวม ' + sum(today) + ' บาท • ทั้งหมด ' + a.length + ' ครั้ง รวม ' + sum(a) + ' บาท';
+}
+let idleT = null, idleSec = 0;
+function touchIdle() { clearTimeout(idleT); if (idleSec > 0) idleT = setTimeout(goHome, idleSec * 1000); }
+function setIdle(sec) { idleSec = sec; touchIdle(); }
+function goHome() {
+  if (st.busy) { touchIdle(); return; }
+  setIdle(0); stopCamera(); st.result = null;
+  $('resImg').removeAttribute('src'); $('printImg').removeAttribute('src');
+  renderPay(); show('pay');
+}
+document.addEventListener('pointerdown', touchIdle, true);
+
+/* ============ ผลลัพธ์ / ปริ้นท์ ============ */
+$('printBtn').onclick = () => { if (NATIVE) Android.printImage(st.result); else window.print(); };
+// iPhone: เปิดแผงแชร์ แล้วเลือก "บันทึกรูปภาพ" เพื่อเก็บลงอัลบั้ม
+async function shareImage() {
+  try {
+    if (!navigator.canShare) return false;
+    const blob = await (await fetch(st.result)).blob();
+    const file = new File([blob], 'alb-photoboot-' + Date.now() + '.jpg', { type: 'image/jpeg' });
+    if (!navigator.canShare({ files: [file] })) return false;
+    await navigator.share({ files: [file] });
+    return true;
+  } catch (e) { return !!e && e.name === 'AbortError'; }
+}
+$('saveBtn').onclick = async () => { if (NATIVE) { $('saveBtn').textContent = Android.saveImage(st.result) ? '✅ บันทึกแล้ว' : '❌ บันทึกไม่ได้'; return; } if (await shareImage()) return; const a = document.createElement('a'); a.href = st.result; a.download = 'alb-photoboot-' + Date.now() + '.jpg'; a.click(); };
+$('doneBtn').onclick = goHome;
+
+/* ============ เริ่มต้น ============ */
+(async () => {
+  await loadSettings();
+  if (NATIVE) Android.setPayPackage(S.payPkg || '');
+  updateInstallButton();
+  renderPay();
+  const refreshPay = () => { if (!document.hidden && $('pay').classList.contains('on') && !$('modal').classList.contains('on')) renderPay(); };
+  document.addEventListener('visibilitychange', refreshPay);
+  window.addEventListener('focus', refreshPay);
+  if ('serviceWorker' in navigator && !NATIVE) navigator.serviceWorker.register('sw.js').catch(() => {});
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
+})();
+</script>
+</body>
+</html>
